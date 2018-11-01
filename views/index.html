@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Cybersource Test Page - Vanilla</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <style>
+    html,
+    body,
+    .container {
+      height: 100%;
+    }
+    .microform-input {
+      height: 38px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container d-flex justify-content-center justify-content-center flex-column">
+    <h6 class="text-warning">Open Console to see form field events</h6>
+    <form id="my-sample-form" action="/payment" method="POST">
+      <div class="form-group">
+        <label for="example-email-input">Email address</label>
+        <input type="email" class="form-control" id="example-email-input" aria-describedby="emailHelp" placeholder="Enter email"/>
+        <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+      </div>
+      <div class="form-group">
+        <label id="cardNumber-label">Card Number</label>
+        <div id="cardNumber-container" class="form-control microform-input"></div>
+      </div>
+      <input type="hidden" id="token-input" name="token"/>
+      <button id="pay-button" type="button" class="btn btn-primary">Pay</button>
+    </form>
+  </div>
+  <script src="https://flex.cybersource.com/cybersource/assets/microform/0.4.0/flex-microform.min.js"></script>
+  <script>
+    /**
+     * Microform Demo
+     * Test CC #: 4111 1111 1111 1111
+     */
+    ((window, document) => {
+      const form = document.querySelector('#my-sample-form');
+      const payButton = document.querySelector('#pay-button');
+      const tokenInput = document.querySelector('#token-input');
+      const exampleInput = document.querySelector('#example-email-input');
+      const computedStyles = window.getComputedStyle(exampleInput);
+      const events = [
+        'enabled',
+        'disabled',
+        'focus',
+        'blur',
+        'empty',
+        'notEmpty',
+        'cardTypeChange',
+        'validationChange',
+        'inputSubmitRequest',
+        'tokenizeLoadStart',
+        // 'autocomplete', // This event throws an error.
+        // 'autocompleteChange' // '' '' '' '' ''
+      ];
+
+      /**
+       * Bind All Events
+       */
+      function eventsDemo(instance) {
+        events.forEach(event => instance.on(event, data => console.log(event, data)));
+      }
+
+      /**
+       * Fetch key and create form
+       * Note: This should be done server side!
+       */
+      fetch('/key')
+        .then((response) => response.json())
+        .then(({
+          jwk
+        }) => {
+          // Set up microform with options
+          FLEX.microform({
+              keyId: jwk.kid,
+              keystore: jwk,
+              container: '#cardNumber-container',
+              label: '#cardNumber-label',
+              placeholder: 'Enter card number',
+              styles: {
+                input: {
+                  // Cherry pick computed styles needed for input text
+                  'font-size': computedStyles.fontSize,
+                  'font-family': computedStyles.fontFamily,
+                  'color': computedStyles.color,
+                },
+                ':focus': {
+                  'color': 'blue'
+                },
+                ':disabled': {
+                  'cursor': 'not-allowed'
+                },
+                'valid': {
+                  'color': '#3c763d'
+                },
+                'invalid': {
+                  'color': '#a94442'
+                },
+              },
+              encryptionType: 'rsaoaep',
+            },
+            // Handle new microform instance
+            (setupError, microformInstance) => {
+              if (setupError) {
+                console.log(setupError);
+                return;
+              }
+
+              // Bind all form events
+              eventsDemo(microformInstance);
+
+              // Intercept the form submission and make a tokenize request instead
+              payButton.addEventListener('click', () => {
+
+                // Send in optional parameters from other parts of your payment form
+                const options = {
+                  // cardExpirationMonth: /* ... */,
+                  // cardExpirationYear: /* ... */,
+                  // cardType: /* ... */
+                };
+
+                microformInstance.createToken(options, (tokenError, response) => {
+                  if (tokenError) {
+                    console.log(tokenError)
+                    return;
+                  }
+                  // Add token value to hidden input
+                  tokenInput.value = JSON.stringify(response);
+
+                  console.log('Token generated', );
+                  console.log(tokenInput.value);
+                  form.submit();
+                });
+              });
+            }
+          );
+        });
+    })(window, document);
+  </script>
+</body>
+</html>
