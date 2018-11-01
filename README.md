@@ -1,3 +1,8 @@
+## Configure Environment
+`cp .env.example .env`
+
+Update .env file with Cybersource credentials.
+
 ## Install
 
 `yarn`
