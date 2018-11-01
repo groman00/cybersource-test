@@ -8,13 +8,16 @@ export default class Cart extends Component {
       <AppConsumer>
         {({ items }) => (
           ReactDOM.createPortal(
-            items.map((item, i) =>
-              <div
-                key={i}
-                className="cart__item">
-                { item.timestamp }
-              </div>
-            ),
+            <div className="cartdemo">
+              <h2 className="cartdemo__heading">Cart Items</h2>
+              { items.map((item, i) =>
+                <div
+                  key={i}
+                  className="cartdemo__item">
+                  { item.timestamp }
+                </div>
+              ) }
+            </div>,
             document.getElementById('cart'),
           )
         )}
